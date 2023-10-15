@@ -1,6 +1,6 @@
 use std::net::TcpListener;
 
-use web_server_in_rust::{handle_connection,ThreadPool};
+use web_server_in_rust::{handle_connection, ThreadPool};
 
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
@@ -14,4 +14,3 @@ fn main() {
         });
     }
 }
-
