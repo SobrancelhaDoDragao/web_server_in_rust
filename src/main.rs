@@ -12,7 +12,7 @@ fn main() {
     let listener = TcpListener::bind(PORT).unwrap();
     let pool = ThreadPool::new(4);
     println!("Listening on: {}", PORT);
-    for stream in listener.incoming().take(2) {
+    for stream in listener.incoming().take(4) {
         let stream = stream.unwrap();
 
         pool.execute(|| {
@@ -41,7 +41,7 @@ fn handle_connection(mut stream: TcpStream) {
 
     let contents: String = match fs::read_to_string(filename) {
         Ok(string_file) => string_file,
-        Err(error) => panic!("{}", error),
+        Err(error) => panic!("Não foi possivel ler o arquivo Html {}", error),
     };
 
     let response = format!(
