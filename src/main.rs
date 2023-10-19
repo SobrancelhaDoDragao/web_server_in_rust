@@ -12,7 +12,7 @@ fn main() {
     let listener = TcpListener::bind(PORT).unwrap();
     let pool = ThreadPool::new(4);
     println!("Listening on: {}", PORT);
-    for stream in listener.incoming().take(4) {
+    for stream in listener.incoming() {
         let stream = stream.unwrap();
 
         pool.execute(|| {
