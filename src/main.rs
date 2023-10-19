@@ -6,10 +6,12 @@ use std::thread;
 use std::time::Duration;
 use web_server_in_rust::ThreadPool;
 
-fn main() {
-    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
-    let pool = ThreadPool::new(4);
+const PORT: &str = "127.0.0.1:7878";
 
+fn main() {
+    let listener = TcpListener::bind(PORT).unwrap();
+    let pool = ThreadPool::new(4);
+    println!("Listening on: {}", PORT);
     for stream in listener.incoming().take(2) {
         let stream = stream.unwrap();
 
@@ -37,7 +39,10 @@ fn handle_connection(mut stream: TcpStream) {
         ("HTTP/1.1 404 NOT FOUND", "404.html")
     };
 
-    let contents = fs::read_to_string(filename).unwrap();
+    let contents: String = match fs::read_to_string(filename) {
+        Ok(string_file) => string_file,
+        Err(error) => panic!("{}", error),
+    };
 
     let response = format!(
         "{}\r\nContent-Length: {}\r\n\r\n{}",
