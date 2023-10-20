@@ -9,9 +9,14 @@ use web_server_in_rust::ThreadPool;
 const PORT: &str = "127.0.0.1:7878";
 
 fn main() {
-    let listener = TcpListener::bind(PORT).unwrap();
-    let pool = ThreadPool::new(4);
+    let listener = match TcpListener::bind(PORT) {
+        Ok(tcp) => tcp,
+        Err(error) => panic!("Error na criação do listener: {error}"),
+    };
+
     println!("Listening on: {}", PORT);
+    let pool = ThreadPool::new(4);
+
     for stream in listener.incoming() {
         let stream = stream.unwrap();
 
