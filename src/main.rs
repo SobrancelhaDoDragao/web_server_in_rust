@@ -7,6 +7,7 @@ use std::time::Duration;
 use web_server_in_rust::ThreadPool;
 
 const PORT: &str = "127.0.0.1:7878";
+const THREADNUMBER: usize = 4;
 
 fn main() {
     let listener = match TcpListener::bind(PORT) {
@@ -15,14 +16,15 @@ fn main() {
     };
 
     println!("Listening on: {}", PORT);
-    let pool = ThreadPool::new(4);
+    let pool = ThreadPool::new(THREADNUMBER);
 
     for stream in listener.incoming() {
-        let stream = stream.unwrap();
-
-        pool.execute(|| {
-            handle_connection(stream);
-        });
+        match stream {
+            Ok(stream) => pool.execute(|| {
+                handle_connection(stream);
+            }),
+            Err(error) => panic!("{error}"),
+        }
     }
 
     println!("Shutting down.");

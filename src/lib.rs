@@ -8,6 +8,11 @@ pub struct ThreadPool {
     sender: Option<mpsc::Sender<Job>>,
 }
 
+struct Worker {
+    id: usize,
+    thread: Option<thread::JoinHandle<()>>,
+}
+
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
 impl ThreadPool {
@@ -59,11 +64,6 @@ impl Drop for ThreadPool {
             }
         }
     }
-}
-
-struct Worker {
-    id: usize,
-    thread: Option<thread::JoinHandle<()>>,
 }
 
 impl Worker {
