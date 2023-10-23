@@ -12,7 +12,7 @@ struct Worker {
     id: usize,
     thread: Option<thread::JoinHandle<()>>,
 }
-
+// Armazenando um uma função anonima
 type Job = Box<dyn FnOnce() + Send + 'static>;
 
 impl ThreadPool {
@@ -31,7 +31,7 @@ impl ThreadPool {
         let receiver = Arc::new(Mutex::new(receiver));
 
         let mut workers = Vec::with_capacity(size);
-
+        // Aqui é criado as threads
         for id in 0..size {
             workers.push(Worker::new(id, Arc::clone(&receiver)));
         }
@@ -42,12 +42,11 @@ impl ThreadPool {
         }
     }
 
-    pub fn execute<F>(&self, f: F)
+    pub fn execute<Fuction>(&self, f: Fuction)
     where
-        F: FnOnce() + Send + 'static,
+        Fuction: FnOnce() + Send + 'static,
     {
         let job = Box::new(f);
-
         self.sender.as_ref().unwrap().send(job).unwrap();
     }
 }
@@ -69,16 +68,17 @@ impl Drop for ThreadPool {
 impl Worker {
     fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
         let thread = thread::spawn(move || loop {
+            // Verificando se há job
             let message = receiver.lock().unwrap().recv();
 
             match message {
                 Ok(job) => {
                     println!("Worker {id} got a job; executing.");
-
+                    // Handle connection
                     job();
                 }
                 Err(_) => {
-                    println!("Worker {id} disconnected; shutting down.");
+                    println!("Worker {id} disconnected; shutting down...");
                     break;
                 }
             }
