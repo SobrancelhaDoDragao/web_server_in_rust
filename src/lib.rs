@@ -1,3 +1,6 @@
+/// Cada worker tem uma clousure(Função anonima) armazenada dentro da varivavel thread na struct
+/// worker. A struct ThreadPool centraliza o sender, que será usado para enviar tarefas para cada
+/// thread. O receiver está dentro do loop da clousure na variavel thread.
 use std::{
     sync::{mpsc, Arc, Mutex},
     thread,
@@ -77,6 +80,7 @@ impl Drop for ThreadPool {
 
 impl Worker {
     fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message>>>) -> Worker {
+        // Criando a thread do wokker e armazenando em uma variavel
         let thread = thread::spawn(move || loop {
             let message = receiver.lock().unwrap().recv().unwrap();
 
@@ -94,7 +98,7 @@ impl Worker {
                 }
             }
         });
-
+        // Returnando a thread
         Worker {
             id,
             thread: Some(thread),
