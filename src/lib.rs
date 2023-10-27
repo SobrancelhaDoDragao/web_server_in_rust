@@ -3,17 +3,23 @@ use std::{
     thread,
 };
 
+// Armazenando um uma função anonima
+type Job = Box<dyn FnOnce() + Send + 'static>;
+
 pub struct ThreadPool {
     workers: Vec<Worker>,
-    sender: Option<mpsc::Sender<Job>>,
+    sender: mpsc::Sender<Message>,
 }
 
 struct Worker {
     id: usize,
     thread: Option<thread::JoinHandle<()>>,
 }
-// Armazenando um uma função anonima
-type Job = Box<dyn FnOnce() + Send + 'static>;
+
+enum Message {
+    NewJob(Job),
+    Terminate,
+}
 
 impl ThreadPool {
     /// Create a new ThreadPool.
@@ -36,10 +42,7 @@ impl ThreadPool {
             workers.push(Worker::new(id, Arc::clone(&receiver)));
         }
 
-        ThreadPool {
-            workers,
-            sender: Some(sender),
-        }
+        ThreadPool { workers, sender }
     }
 
     pub fn execute<Fuction>(&self, f: Fuction)
@@ -47,13 +50,20 @@ impl ThreadPool {
         Fuction: FnOnce() + Send + 'static,
     {
         let job = Box::new(f);
-        self.sender.as_ref().unwrap().send(job).unwrap();
+
+        self.sender.send(Message::NewJob(job)).unwrap();
     }
 }
 
 impl Drop for ThreadPool {
     fn drop(&mut self) {
-        drop(self.sender.take());
+        println!("Sending terminate message to all workers");
+
+        for _ in &self.workers {
+            self.sender.send(Message::Terminate).unwrap();
+        }
+
+        println!("Shutting down all workers.");
 
         for worker in &mut self.workers {
             println!("Shutting down worker {}", worker.id);
@@ -66,19 +76,20 @@ impl Drop for ThreadPool {
 }
 
 impl Worker {
-    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker {
+    fn new(id: usize, receiver: Arc<Mutex<mpsc::Receiver<Message>>>) -> Worker {
         let thread = thread::spawn(move || loop {
-            // Verificando se há job
-            let message = receiver.lock().unwrap().recv();
+            let message = receiver.lock().unwrap().recv().unwrap();
+
+            println!("Worker {} got a job; executing.", id);
 
             match message {
-                Ok(job) => {
-                    println!("Worker {id} got a job; executing.");
-                    // Handle connection
+                Message::NewJob(job) => {
+                    println!("Worker {} got a job; executing.", id);
+
                     job();
                 }
-                Err(_) => {
-                    println!("Worker {id} disconnected; shutting down...");
+                Message::Terminate => {
+                    println!("Worker {} was told to terminate.", id);
                     break;
                 }
             }
